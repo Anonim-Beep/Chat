@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Chat - Raki enak</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Nunito', sans-serif;
+      background: #dce9f7;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .phone-frame {
+      width: 370px;
+      height: 720px;
+      background: #b8d4f0;
+      border-radius: 40px;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.2), inset 0 0 0 2px #a0c2e8;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    .chat-header {
+      background: linear-gradient(135deg, #5b9bd5, #3a7bbf);
+      padding: 16px 18px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+    }
+
+    .back-btn { color: white; font-size: 20px; cursor: pointer; opacity: 0.9; }
+
+    .avatar {
+      width: 42px; height: 42px; border-radius: 50%;
+      background: linear-gradient(135deg, #a8d8a8, #5cb85c);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: 700; color: white;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2); flex-shrink: 0;
+    }
+
+    .contact-info { flex: 1; }
+    .contact-name { font-size: 16px; font-weight: 700; color: white; letter-spacing: 0.3px; }
+    .contact-status { font-size: 11.5px; color: rgba(255,255,255,0.8); margin-top: 1px; }
+    .header-icons { display: flex; gap: 14px; color: rgba(255,255,255,0.9); font-size: 18px; }
+
+    /* Chat area */
+    .chat-body {
+      flex: 1; overflow-y: auto;
+      padding: 16px 14px;
+      display: flex; flex-direction: column; gap: 8px;
+      background: #cfe0f5;
+      background-image:
+        radial-gradient(circle at 20% 20%, rgba(255,255,255,0.3) 0%, transparent 60%),
+        radial-gradient(circle at 80% 80%, rgba(91,155,213,0.12) 0%, transparent 60%);
+    }
+
+    .date-label {
+      text-align: center; font-size: 11px; color: #6b8faf;
+      background: rgba(255,255,255,0.5); padding: 4px 12px;
+      border-radius: 20px; align-self: center; margin-bottom: 4px;
+    }
+
+    /* Bubble row */
+    .bubble-row {
+      display: flex; flex-direction: column; max-width: 75%;
+    }
+    .bubble-row.me   { align-self: flex-end;  align-items: flex-end; }
+    .bubble-row.them { align-self: flex-start; align-items: flex-start; }
+
+    /* Actual chat bubble */
+    .bubble {
+      padding: 10px 14px; border-radius: 18px;
+      font-size: 13.5px; line-height: 1.5; font-weight: 600;
+      word-break: break-word;
+      opacity: 0; transform: translateY(8px);
+      transition: opacity 0.35s ease, transform 0.35s ease;
+    }
+    .bubble.visible { opacity: 1; transform: translateY(0); }
+
+    .bubble-row.me .bubble {
+      background: linear-gradient(135deg, #3d8b5f, #2e7350);
+      color: #e8f5ed; border-bottom-right-radius: 5px;
+      box-shadow: 0 3px 10px rgba(46,115,80,0.35);
+    }
+    .bubble-row.them .bubble {
+      background: linear-gradient(135deg, #4a7fa8, #3a6a92);
+      color: #e4f0f9; border-bottom-left-radius: 5px;
+      box-shadow: 0 3px 10px rgba(58,106,146,0.3);
+    }
+
+    .bubble-time {
+      font-size: 10px; color: #6b8faf;
+      margin-top: 3px; padding: 0 4px; font-weight: 400;
+      opacity: 0; transition: opacity 0.3s ease 0.1s;
+    }
+    .bubble-time.visible { opacity: 1; }
+    .bubble-row.me .bubble-time { text-align: right; }
+    .check { font-size: 10px; color: #a0cfff; margin-left: 2px; }
+
+    /* ── Typing indicator ── */
+    .typing-bubble {
+      display: flex; align-items: center;
+      gap: 5px; padding: 10px 16px;
+      border-radius: 18px; border-bottom-left-radius: 5px;
+      background: linear-gradient(135deg, #4a7fa8, #3a6a92);
+      box-shadow: 0 3px 10px rgba(58,106,146,0.3);
+      align-self: flex-start;
+      opacity: 0; transform: translateY(8px);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+    .typing-bubble.show { opacity: 1; transform: translateY(0); }
+
+    .typing-bubble span {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: rgba(255,255,255,0.85);
+      animation: bounce 1.2s infinite ease-in-out;
+    }
+    .typing-bubble span:nth-child(1) { animation-delay: 0s; }
+    .typing-bubble span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-bubble span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes bounce {
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+      30%            { transform: translateY(-5px); opacity: 1; }
+    }
+
+    /* Input bar */
+    .chat-input-bar {
+      background: linear-gradient(135deg, #5b9bd5, #3a7bbf);
+      padding: 12px 14px; display: flex; align-items: center; gap: 10px;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+    }
+    .input-box {
+      flex: 1; background: rgba(255,255,255,0.88); border-radius: 24px;
+      padding: 10px 16px; font-size: 13px;
+      font-family: 'Nunito', sans-serif; font-weight: 600;
+      color: #2d4a6e; border: none; outline: none;
+    }
+    .input-box::placeholder { color: #7aa8d0; }
+    .send-btn {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: linear-gradient(135deg, #3d8b5f, #2e7350);
+      border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; color: white;
+      box-shadow: 0 2px 8px rgba(46,115,80,0.4);
+      transition: transform 0.15s;
+    }
+    .send-btn:hover { transform: scale(1.08); }
+  </style>
+</head>
+<body>
+
+<div class="phone-frame">
+  <div class="chat-header">
+    <div class="back-btn">‹</div>
+    <div class="avatar">R</div>
+    <div class="contact-info">
+      <div class="contact-name">Raki enak</div>
+      <div class="contact-status" id="headerStatus">Online</div>
+    </div>
+    <div class="header-icons">
+      <span>📞</span>
+      <span>⋮</span>
+    </div>
+  </div>
+
+  <div class="chat-body" id="chatBody">
+    <div class="date-label">Hari ini</div>
+  </div>
+
+  <div class="chat-input-bar">
+    <input class="input-box" type="text" placeholder="Ketik pesan..." />
+    <button class="send-btn">➤</button>
+  </div>
+</div>
+
+<script>
+  const chatBody = document.getElementById('chatBody');
+  const headerStatus = document.getElementById('headerStatus');
+
+  const messages = [
+    { side: 'me',   text: 'Mas, laperrrr. Nanti mampir fc dulu.',              time: '13:21', check: true  },
+    { side: 'them', text: 'Nanti mas jemput ke kelas ya.',                      time: '13:23', check: false },
+    { side: 'me',   text: 'Yaudah nanti tungguin di depan kelas. Di gdung A7',  time: '13:24', check: true  },
+    { side: 'them', text: 'Iya menggg',                                         time: '13:25', check: false },
+  ];
+
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const scrollBottom = () => { chatBody.scrollTop = chatBody.scrollHeight; };
+
+  async function showTyping() {
+    const el = document.createElement('div');
+    el.className = 'typing-bubble';
+    el.innerHTML = '<span></span><span></span><span></span>';
+    chatBody.appendChild(el);
+    scrollBottom();
+    await sleep(30);
+    el.classList.add('show');
+    scrollBottom();
+    headerStatus.textContent = 'mengetik...';
+    await sleep(1500);
+    el.classList.remove('show');
+    await sleep(300);
+    el.remove();
+    headerStatus.textContent = 'Online';
+  }
+
+  async function showMyTyping() {
+    // For "me" side: brief pause to simulate natural typing
+    await sleep(900);
+  }
+
+  async function playMessages() {
+    await sleep(500);
+
+    for (let i = 0; i < messages.length; i++) {
+      const msg = messages[i];
+
+      if (msg.side === 'them') {
+        await showTyping();
+      } else {
+        await showMyTyping();
+      }
+
+      // Build bubble
+      const row = document.createElement('div');
+      row.className = `bubble-row ${msg.side}`;
+
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      bubble.textContent = msg.text;
+
+      const timeEl = document.createElement('div');
+      timeEl.className = 'bubble-time';
+      timeEl.innerHTML = msg.check
+        ? `${msg.time} <span class="check">✓✓</span>`
+        : msg.time;
+
+      row.appendChild(bubble);
+      row.appendChild(timeEl);
+      chatBody.appendChild(row);
+      scrollBottom();
+
+      await sleep(40);
+      bubble.classList.add('visible');
+      timeEl.classList.add('visible');
+      scrollBottom();
+
+      if (i < messages.length - 1) {
+        await sleep(messages[i + 1].side === msg.side ? 600 : 1100);
+      }
+    }
+  }
+
+  playMessages();
+</script>
+</body>
+</html>
